@@ -33,6 +33,90 @@ async def post_usuario(usuario:UsuarioSchemaCreate, db:AsyncSession=Depends(get_
     )
     async with db as session:
         session.add(new_user)
-        await session.commit()
+        await session.commit() 
         return new_user
     
+# GET todos os usuarios
+@router.get('/', response_model=List[UsuarioSchemaBase])
+async def get_usuarios(db:AsyncSession=Depends(get_current_user)):
+    async with db as session:
+        query = select(UsuarioModel)
+        result = await session.execute(query)
+        usuarios: List[UsuarioSchemaBase] = result.scalar().unique().all()
+        return usuarios
+
+# GET usuario
+@router.get('/{usuario_id}', response_model=UsuarioSchemaArtigos)
+async def get_usuarios(usuario_id:int, db:AsyncSession=Depends(get_current_user)):
+    async with db as session:
+        query = select(UsuarioModel).where(UsuarioModel.id == usuario_id)
+        result = await session.execute()
+        usuario: UsuarioSchemaArtigos = result.scalars().unique().one_or_none()
+
+        if usuario:
+            return usuario
+        else:
+            raise HTTPException(
+                detail='Usuario não encontrado',
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+
+# PUT usuario
+@router.put('/{usuario_id}', response_model=UsuarioSchemaBase, status_code=status.HTTP_202_ACCEPTED)
+async def get_usuarios(usuario_id:int,usuario:UsuarioSchemaUp, db:AsyncSession=Depends(get_current_user)):
+    async with db as session:
+        query = select(UsuarioModel).where(UsuarioModel.id == usuario_id)
+        result = await session.execute()
+        usuario_up: UsuarioSchemaArtigos = result.scalars().unique().one_or_none()
+
+        if usuario:
+            if usuario.nome:
+                usuario_up.nome = usuario.nome
+            if usuario.sobrenome:
+                usuario_up.sobrenome = usuario.sobrenome
+            if usuario.email:
+                usuario_up.email = usuario.email
+            if usuario.eh_admin:
+                usuario_up.eh_admin = usuario.eh_admin
+            if usuario.senha:
+                # se nao colocar o hash armazena a senha em texto
+                usuario_up.senha = gerar_hash_senha(usuario.senha)
+
+            await session.commit()
+            return usuario_up
+        else:
+            raise HTTPException(
+                detail='Usuario não encontrado',
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+# DELETE  usuario
+@router.delete('/{usuario_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def get_usuarios(usuario_id:int, db:AsyncSession=Depends(get_current_user)):
+    async with db as session:
+        query = select(UsuarioModel).where(UsuarioModel.id == usuario_id)
+        result = await session.execute()
+        usuario_del: UsuarioSchemaArtigos = result.scalars().unique().one_or_none()
+
+        if usuario_del:
+            await session.delete(usuario_del)
+            await session.commit()
+
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+        else:
+            raise HTTPException(
+                detail='Usuario não encontrado',
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+# POST login
+@router.post('/login')
+async def login(form_data:OAuth2PasswordRequestForm=Depends(), db:AsyncSession=Depends(get_session)):
+    usuario = await autenticar(email=form_data.username, senha=form_data.password, db=db)
+    if not usuario:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Dados de acesso incorreto.')
+    
+    # token de acesso baseado no id
+    return JSONResponse(content={"acess_token": criar_token_acesso(sub=usuario.id), 
+                                 'token_type':'bearer'}, status_code=status.HTTP_200_OK)
+

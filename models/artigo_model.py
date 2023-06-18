@@ -14,4 +14,4 @@ class ArtigoModel(settings.DBBaseModel):
     # relaciomento orm
     criador = relationship('UsuarioModel', back_populates='artigos', lazy='joined')
 
-
+ 

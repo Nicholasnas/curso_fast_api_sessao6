@@ -3,7 +3,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    API_V1_STR: str = '/ap1/v1'
+    API_V1_STR: str = '/api/v1'
     DB_URL: str = 'sqlite+aiosqlite:///faculdade.db'
     DBBaseModel = declarative_base()
 

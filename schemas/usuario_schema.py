@@ -1,9 +1,9 @@
 from typing import Optional, List
-from pydantic import BaseMode, EmailStr
+from pydantic import BaseModel, EmailStr
 from schemas.artigo_schema import ArtigoSchema
 
 # nao retorna senha
-class UsuarioSchemaBase(BaseMode):
+class UsuarioSchemaBase(BaseModel):
     id: Optional[int] = None
     nome: str
     sobrenome: str
